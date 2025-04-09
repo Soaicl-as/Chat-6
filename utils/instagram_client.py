@@ -1,11 +1,13 @@
 from instagrapi import Client
+import time
 
 class InstagramBot:
-    def __init__(self):
+    def __init__(self, logger=None):
         self.client = Client()
         self.username = None
         self.password = None
         self._ready = False
+        self.logger = logger
 
     def try_login(self, username, password):
         self.username = username
@@ -29,10 +31,14 @@ class InstagramBot:
             return "2FA_REQUIRED"
 
     def get_followers(self, username, amount):
-        return self.client.user_followers(self.client.user_id_from_username(username), amount)
+        user_id = self.client.user_id_from_username(username)
+        return self.client.user_followers(user_id, amount=amount)
 
     def get_following(self, username, amount):
-        return self.client.user_following(self.client.user_id_from_username(username), amount)
+        user_id = self.client.user_id_from_username(username)
+        return self.client.user_following(user_id, amount=amount)
 
     def send_dm(self, user, message):
-        self.client.direct_send(message, [user.pk])
+        result = self.client.direct_send(message, [user.pk])
+        time.sleep(1)  # Add a small delay between each API call
+        return result
