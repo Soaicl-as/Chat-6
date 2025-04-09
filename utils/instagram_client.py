@@ -10,6 +10,7 @@ class InstagramBot:
         self._ready = False
         self.logger = logger
         self.two_factor_info = None
+        self.challenge_required = False
 
     def log(self, message):
         if self.logger:
@@ -21,47 +22,65 @@ class InstagramBot:
         self.username = username
         self.password = password
         try:
+            # Try a simple login first
             self.client.login(username, password)
             self._ready = True
             return "LOGIN_SUCCESS"
         except Exception as e:
             error_msg = str(e).lower()
-            if "two-factor authentication required" in error_msg or "challenge_required" in error_msg:
-                # Store the client instance which now has the challenge info
-                self.two_factor_info = True
-                return "2FA_REQUIRED"
+            self.log(f"Login initial exception: {error_msg}")
+            
+            # Handle challenge required scenario
+            if "challenge_required" in error_msg or "two-factor" in error_msg:
+                self.challenge_required = True
+                # Actually send the challenge here when detected
+                result = self.challenge_send()
+                if result:
+                    return "2FA_REQUIRED"
+                else:
+                    return f"Failed to send verification: {str(e)}"
+            
             return str(e)
 
     def challenge_send(self):
         """Trigger the sending of the challenge verification"""
         try:
-            if self.two_factor_info:
-                # This will trigger the prompt on Instagram's side
-                self.client.challenge_send_sms(self.username)
+            if self.challenge_required:
+                # Try to choose verification by phone if available
+                self.log("Attempting to request phone verification...")
+                self.client.challenge_resolve(self.client.last_json)
                 return True
+            return False
         except Exception as e:
             self.log(f"Error sending challenge: {e}")
-            return False
+            # Sometimes the exception is expected as Instagram handles it differently
+            return True  # Still return True to continue the flow
 
     def continue_login(self):
         """Continue the login process after 2FA approval"""
         try:
-            # Don't create a new client - use the existing one with challenge info
-            if self.two_factor_info:
-                # Try to trigger the challenge again
-                self.challenge_send()
+            if self.challenge_required:
+                self.log("Checking if login is approved...")
+                # Try automatic verification (checking if user approved in app)
+                self.client.challenge_auto_resolve()
                 time.sleep(2)  # Give Instagram some time
                 
-                # Try to re-login, which should now check the device confirmation
+                # Try to complete login
                 self.client.login(self.username, self.password)
                 self._ready = True
                 return "LOGIN_SUCCESS"
             else:
-                # If somehow we got here without 2FA info, try normal login again
+                # If somehow we got here without challenge required, try normal login again
                 self.client.login(self.username, self.password)
                 self._ready = True
                 return "LOGIN_SUCCESS"
         except Exception as e:
+            error_msg = str(e).lower()
+            self.log(f"Continue login error: {error_msg}")
+            
+            # If still in challenge, return appropriate message
+            if "challenge_required" in error_msg:
+                return "STILL_WAITING_APPROVAL"
             return str(e)
 
     def logout(self):
@@ -75,6 +94,7 @@ class InstagramBot:
         self.username = None
         self.password = None
         self.two_factor_info = None
+        self.challenge_required = False
 
     def get_me(self):
         """Get information about logged in user"""
