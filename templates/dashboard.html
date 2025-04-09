@@ -17,17 +17,24 @@
     <div class="container">
         <h1>Instagram DM Bot</h1>
         <form method="POST">
-            <input type="text" name="target" placeholder="Target username" required>
+            <input type="text" name="target_user" placeholder="Target username" required>
             <select name="mode">
                 <option value="followers">Followers</option>
                 <option value="following">Following</option>
             </select>
             <textarea name="message" placeholder="Custom message" required></textarea>
-            <input type="number" name="amount" placeholder="Number of users" required>
-            <input type="number" name="delay" placeholder="Delay between messages (sec)" required>
+            <input type="number" name="limit" placeholder="Number of users" required>
+            <input type="number" name="delay" placeholder="Delay between messages (sec)" required step="0.1">
             <button type="submit">Send Messages</button>
         </form>
-        <pre id="logBox" class="log-box">Logs will appear here...</pre>
+        {% if error %}
+            <p class="error">❌ {{ error }}</p>
+        {% endif %}
+        <div class="log-box">
+            {% for log in logs %}
+                <div>{{ log }}</div>
+            {% endfor %}
+        </div>
     </div>
 </body>
 </html>
