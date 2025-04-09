@@ -98,6 +98,9 @@ def manual_unsecure():
                 log(f"✅ Successfully logged in as {session['username']}")
                 session["last_activity"] = time.time()
                 return redirect(url_for("dashboard"))
+            elif result == "STILL_WAITING_APPROVAL":
+                log(f"⚠️ Still waiting for approval in Instagram app")
+                return render_template("manual_unsecure.html", error="Still waiting for approval. Please check your Instagram app or email and approve the login.")
             else:
                 log(f"❌ Login still failed: {result}")
                 return render_template("manual_unsecure.html", error=f"Login failed: {result}")
@@ -107,11 +110,12 @@ def manual_unsecure():
     
     # On GET request, ensure we're actively triggering the challenge
     try:
-        # This line is just to make sure the challenge is being triggered on page load
+        # Explicitly send a challenge request when the page loads
         client.challenge_send()
+        log(f"🔒 Sent verification request to Instagram for {session['username']}")
     except Exception as e:
-        # We expect this might fail but still show the page
-        log(f"Initial challenge trigger: {e}")
+        # Log the error but still show the page
+        log(f"⚠️ Challenge trigger error: {e}")
         
     return render_template("manual_unsecure.html")
 
