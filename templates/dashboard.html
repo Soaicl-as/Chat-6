@@ -2,20 +2,137 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard</title>
+    <title>Instagram DM Bot Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <script>
-        async function fetchLogs() {
-            const res = await fetch('/logs');
-            const data = await res.json();
-            document.getElementById("logBox").innerText = data.logs.join('\n');
+        // Check session status periodically
+        async function checkStatus() {
+            try {
+                const res = await fetch('/status');
+                if (!res.ok) {
+                    window.location.href = '/login?error=Session expired';
+                }
+            } catch (e) {
+                console.error("Status check failed:", e);
+            }
         }
-        setInterval(fetchLogs, 1000);
+        
+        // Fetch logs from server
+        async function fetchLogs() {
+            try {
+                const res = await fetch('/logs');
+                if (res.ok) {
+                    const data = await res.json();
+                    const logBox = document.getElementById("logBox");
+                    logBox.innerHTML = '';
+                    
+                    data.logs.forEach(log => {
+                        const div = document.createElement('div');
+                        
+                        // Add color formatting based on log content
+                        if (log.includes('❌')) {
+                            div.className = 'error-log';
+                        } else if (log.includes('✅')) {
+                            div.className = 'success-log';
+                        } else if (log.includes('⚠️')) {
+                            div.className = 'warning-log';
+                        }
+                        
+                        div.textContent = log;
+                        logBox.appendChild(div);
+                    });
+                    
+                    // Scroll to bottom
+                    logBox.scrollTop = logBox.scrollHeight;
+                }
+            } catch (e) {
+                console.error("Error fetching logs:", e);
+            }
+        }
+        
+        // Initialize page
+        window.onload = function() {
+            fetchLogs();
+            // Setup intervals
+            setInterval(fetchLogs, 1000);
+            setInterval(checkStatus, 30000);
+            
+            // Setup form validation
+            document.querySelector('form').addEventListener('submit', function(e) {
+                const limit = document.querySelector('[name="limit"]').value;
+                const delay = document.querySelector('[name="delay"]').value;
+                
+                if (limit > 100) {
+                    alert('For safety, please limit to 100 or fewer users');
+                    e.preventDefault();
+                    return false;
+                }
+                
+                if (delay < 1.0) {
+                    alert('For safety, please use a delay of at least 1 second');
+                    e.preventDefault();
+                    return false;
+                }
+                
+                return true;
+            });
+        };
     </script>
+    <style>
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            cursor: pointer;
+            width: auto;
+        }
+        .success-message {
+            color: green;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .error-log {
+            color: #dc3545;
+        }
+        .success-log {
+            color: #28a745;
+        }
+        .warning-log {
+            color: #ffc107;
+        }
+        .status-bar {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .tips {
+            background: #e9ecef;
+            padding: 10px;
+            margin-top: 20px;
+            border-left: 4px solid #007bff;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <h1>Instagram DM Bot</h1>
+        <div class="header">
+            <h1>Instagram DM Bot</h1>
+            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+        </div>
+        
+        <div class="status-bar">
+            <div>Logged in as: <strong>{{ session.username }}</strong></div>
+        </div>
+        
         <form method="POST">
             <input type="text" name="target_user" placeholder="Target username" required>
             <select name="mode">
@@ -23,17 +140,35 @@
                 <option value="following">Following</option>
             </select>
             <textarea name="message" placeholder="Custom message" required></textarea>
-            <input type="number" name="limit" placeholder="Number of users" required>
-            <input type="number" name="delay" placeholder="Delay between messages (sec)" required step="0.1">
+            <input type="number" name="limit" placeholder="Number of users (max 100)" required min="1" max="100" value="10">
+            <input type="number" name="delay" placeholder="Delay between messages (sec)" required step="0.1" min="1" value="1.5">
             <button type="submit">Send Messages</button>
         </form>
+        
+        {% if success %}
+            <p class="success-message">✅ {{ success }}</p>
+        {% endif %}
+        
         {% if error %}
             <p class="error">❌ {{ error }}</p>
         {% endif %}
-        <div class="log-box">
+        
+        <h3>Activity Log</h3>
+        <div class="log-box" id="logBox">
             {% for log in logs %}
                 <div>{{ log }}</div>
             {% endfor %}
+        </div>
+        
+        <div class="tips">
+            <h4>Tips to Avoid Instagram Restrictions:</h4>
+            <ul>
+                <li>Keep messages personalized to avoid being flagged as spam</li>
+                <li>Limit to no more than 50-100 messages per day</li>
+                <li>Use delays of at least 1-2 seconds between messages</li>
+                <li>Don't include links in initial messages</li>
+                <li>Avoid sending identical messages to many users</li>
+            </ul>
         </div>
     </div>
 </body>
