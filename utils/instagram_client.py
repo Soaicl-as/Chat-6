@@ -11,6 +11,7 @@ class InstagramBot:
         self.logger = logger
         self.two_factor_info = None
         self.challenge_required = False
+        self.last_json = None
 
     def log(self, message):
         if self.logger:
@@ -30,8 +31,11 @@ class InstagramBot:
             error_msg = str(e).lower()
             self.log(f"Login initial exception: {error_msg}")
             
+            # Store last_json from client for challenge handling
+            self.last_json = self.client.last_json
+            
             # Handle challenge required scenario
-            if "challenge_required" in error_msg or "two-factor" in error_msg:
+            if "challenge_required" in error_msg or "two-factor" in error_msg or hasattr(self.client, 'challenge_code_handler'):
                 self.challenge_required = True
                 # Actually send the challenge here when detected
                 result = self.challenge_send()
@@ -46,15 +50,40 @@ class InstagramBot:
         """Trigger the sending of the challenge verification"""
         try:
             if self.challenge_required:
-                # Try to choose verification by phone if available
-                self.log("Attempting to request phone verification...")
-                self.client.challenge_resolve(self.client.last_json)
-                return True
+                self.log("Challenge required detected...")
+                
+                # Check if we have challenge data in last_json
+                if self.client.last_json and 'challenge' in self.client.last_json:
+                    challenge_url = self.client.last_json.get('challenge', {}).get('api_path')
+                    if challenge_url:
+                        self.log(f"Challenge URL found: {challenge_url}")
+                        # Use the specific challenge handler from instagrapi
+                        choice = 1  # Usually 1 for SMS, 0 for email
+                        self.log(f"Requesting verification via choice {choice}...")
+                        self.client.challenge_resolve(self.client.last_json, choice)
+                        return True
+                
+                # If we don't have specific challenge data, try generic methods
+                self.log("Attempting general challenge resolution...")
+                if hasattr(self.client, 'challenge_code_handler'):
+                    self.log("Using challenge_code_handler...")
+                    self.client.challenge_code_handler = None  # Reset handler first
+                    # This will trigger sending the code
+                    self.client.login(self.username, self.password)
+                    return True
+                else:
+                    # Legacy fallback method
+                    self.log("Trying legacy challenge resolution...")
+                    if hasattr(self.client, 'challenge_resolve'):
+                        self.client.challenge_resolve(self.client.last_json)
+                        return True
+                    
             return False
         except Exception as e:
             self.log(f"Error sending challenge: {e}")
-            # Sometimes the exception is expected as Instagram handles it differently
-            return True  # Still return True to continue the flow
+            # Sometimes the exception is actually expected in the challenge flow
+            # We still want to continue to manual verification page
+            return True  
 
     def continue_login(self):
         """Continue the login process after 2FA approval"""
@@ -62,10 +91,13 @@ class InstagramBot:
             if self.challenge_required:
                 self.log("Checking if login is approved...")
                 # Try automatic verification (checking if user approved in app)
-                self.client.challenge_auto_resolve()
-                time.sleep(2)  # Give Instagram some time
+                if hasattr(self.client, 'challenge_auto_resolve'):
+                    self.log("Using challenge_auto_resolve...")
+                    self.client.challenge_auto_resolve()
+                    time.sleep(3)  # Give Instagram more time
                 
                 # Try to complete login
+                self.log("Attempting login after challenge...")
                 self.client.login(self.username, self.password)
                 self._ready = True
                 return "LOGIN_SUCCESS"
@@ -79,7 +111,7 @@ class InstagramBot:
             self.log(f"Continue login error: {error_msg}")
             
             # If still in challenge, return appropriate message
-            if "challenge_required" in error_msg:
+            if "challenge_required" in error_msg or "two_factor" in error_msg:
                 return "STILL_WAITING_APPROVAL"
             return str(e)
 
