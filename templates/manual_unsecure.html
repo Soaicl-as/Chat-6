@@ -10,7 +10,7 @@
         <h1>Instagram Login</h1>
         <p>Instagram requires 2FA. But in this case, you only need to confirm the login attempt manually.</p>
         <p>✅ Please approve it in the Instagram app or browser.</p>
-        <form method="POST" action="{{ url_for('retry_login') }}">
+        <form method="POST">
             <button type="submit">I have unsecured the account</button>
         </form>
         {% if error %}
