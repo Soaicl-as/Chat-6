@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script>
+        async function fetchLogs() {
+            const res = await fetch('/logs');
+            const data = await res.json();
+            document.getElementById("logBox").innerText = data.logs.join('\n');
+        }
+        setInterval(fetchLogs, 1000);
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Instagram DM Bot</h1>
+        <form method="POST">
+            <input type="text" name="target" placeholder="Target username" required>
+            <select name="mode">
+                <option value="followers">Followers</option>
+                <option value="following">Following</option>
+            </select>
+            <textarea name="message" placeholder="Custom message" required></textarea>
+            <input type="number" name="amount" placeholder="Number of users" required>
+            <input type="number" name="delay" placeholder="Delay between messages (sec)" required>
+            <button type="submit">Send Messages</button>
+        </form>
+        <pre id="logBox" class="log-box">Logs will appear here...</pre>
+    </div>
+</body>
+</html>
